@@ -14,7 +14,6 @@ export function trimSymbols(string, size) {
       counter++;
     }
     if(counter >= size) {
-      console.log(string.substr(start, size));
       result += string.substr(start, size);
     } else {
       result += string.substr(start, counter);
