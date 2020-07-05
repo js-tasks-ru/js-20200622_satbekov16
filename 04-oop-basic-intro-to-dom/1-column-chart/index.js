@@ -20,8 +20,9 @@ export default class ColumnChart {
 
       this.element = document.createElement("div");
 
-      if(!this.data) {
+      if(!this.data || this.data.length === 0) {
         this.element.setAttribute("class", "column-chart_loading");
+        this.element.innerHTML = "<div><img src='charts-skeleton.svg'/></div>";
       }
 
       let output = "<div class=\"column-chart__title\">" + this.label;
