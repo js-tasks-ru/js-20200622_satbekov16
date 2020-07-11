@@ -1,12 +1,10 @@
 class Tooltip {
   element;
+  poverRef;
 
   constructor() {
-    if(!Tooltip.instance) {
-      Tooltip.instance = this;
-    }
+    this.render();
     this.initialize();
-    return Tooltip.instance;
   }
 
   render(id) {
@@ -19,8 +17,8 @@ class Tooltip {
   }
 
   initialize() {
-    document.addEventListener('pointerover', this.pointerOverEvent);
-    document.addEventListener("pointerout", this.removePointerEvent);
+    document.addEventListener('pointerover', this.poverRef = this.pointerOverEvent.bind(this));
+    document.addEventListener("pointerout", this.removePointerEvent.bind(this));
   }
 
   pointerOverEvent(event) {
@@ -32,12 +30,8 @@ class Tooltip {
 
     let tt = this.element;
 
-    let shiftX = event.clientX;
-    let shiftY = event.clientY;
-
-    tt.style.position = 'absolute';
-
     document.body.append(tt);
+    tt.style.position = 'absolute';
 
     moveAt(event.pageX, event.pageY);
 
@@ -58,12 +52,13 @@ class Tooltip {
     if(this.element) {
       this.element.remove();
       this.element = null;
-      document.removeEventListener('pointerover', this.pointerOverEvent);
     }
+    document.removeEventListener('pointerover', this.poverRef);
   }
 
   remove() {
     this.element.remove();
+    this.element = null;
   }
 
   destroy() {
