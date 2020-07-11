@@ -1,17 +1,22 @@
 export default class NotificationMessage {
   element;
-  subElements = {};
+  static notificationIsActive;
 
   constructor(message, {duration, type} = {}) {
+    if(NotificationMessage.notificationIsActive) {
+      NotificationMessage.notificationIsActive.remove();
+    }
+
     this.message = message;
     this.duration = duration;
+    this.durationInSeconds = (duration / 1000) + 's';
     this.type = type;
     this.render();
   }
 
   get template() {
     return `
-      <div class="notification ${this.type}" style="--value:${this.duration}s">
+      <div class="notification ${this.type}" style="--value:${this.durationInSeconds}s">
       <div class="timer"></div>
       <div class="inner-wrapper">
         <div class="notification-header">${this.type}</div>
@@ -20,22 +25,19 @@ export default class NotificationMessage {
         </div>
       </div>
       </div>
-    `
+    `;
   }
 
   render() {
     const element = document.createElement('div');
     element.innerHTML = this.template;
-
     this.element = element.firstElementChild;
 
-    this.subElements = this.getSubElements(this.element);
+    NotificationMessage.notificationIsActive = this.element;
   }
 
-  show(element) {
-    if(element) {
-      this.element = element;
-    }
+  show(root = document.body) {
+    root.append(this.element);
     setTimeout(() =>{
       this.remove();
     }, this.duration);
@@ -49,12 +51,4 @@ export default class NotificationMessage {
     this.remove();
   }
 
-  getSubElements(element) {
-    const elements = element.querySelectorAll('[data-element]');
-
-    return [...elements].reduce((accum, subElement) => {
-      accum[subElement.dataset.element] = subElement;
-      return accum;
-    }, {});
-  }
 }
