@@ -1,6 +1,7 @@
 class Tooltip {
   element;
   poverRef;
+  pmoveRef;
 
   constructor() {
     this.render();
@@ -14,6 +15,14 @@ class Tooltip {
     `;
     this.element = element.firstElementChild;
     document.body.append(this.element);
+  }
+
+  remove() {
+    this.element.remove();
+  }
+
+  destroy() {
+    this.remove();
   }
 
   initialize() {
@@ -44,25 +53,17 @@ class Tooltip {
       moveAt(event.pageX, event.pageY);
     }
 
-    document.addEventListener('pointermove', onMouseMove);
+    document.addEventListener('pointermove', this.poverRef = onMouseMove);
 
   }
 
   removePointerEvent() {
-    if(this.element) {
-      this.element.remove();
-      this.element = null;
-    }
     document.removeEventListener('pointerover', this.poverRef);
-  }
-
-  remove() {
-    this.element.remove();
-    this.element = null;
-  }
-
-  destroy() {
-    this.remove();
+    document.removeEventListener('pointermove', this.pmoveRef);
+    if(this.element) {
+     this.remove();
+     this.element = null;
+    }
   }
 }
 
