@@ -1,6 +1,7 @@
 class Tooltip {
   element;
   poverRef;
+  poutRef;
   pmoveRef;
 
   constructor() {
@@ -23,11 +24,12 @@ class Tooltip {
 
   destroy() {
     this.remove();
+    this.removePointerEvent()
   }
 
   initialize() {
     document.addEventListener('pointerover', this.poverRef = this.pointerOverEvent.bind(this));
-    document.addEventListener("pointerout", this.removePointerEvent.bind(this));
+    document.addEventListener("pointerout", this.poutRef = this.removePointerEvent.bind(this));
   }
 
   pointerOverEvent(event) {
@@ -39,7 +41,6 @@ class Tooltip {
 
     let tt = this.element;
 
-    document.body.append(tt);
     tt.style.position = 'absolute';
 
     moveAt(event.pageX, event.pageY);
@@ -61,7 +62,7 @@ class Tooltip {
     document.removeEventListener('pointerover', this.poverRef);
     document.removeEventListener('pointermove', this.pmoveRef);
     if(this.element) {
-     this.remove();
+     this.element.remove();
      this.element = null;
     }
   }

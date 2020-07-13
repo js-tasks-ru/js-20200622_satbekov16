@@ -5,10 +5,12 @@ export default class SortableTable {
   headerConfig = [];
   data = [];
 
-  constructor(headerConfig, {data = []} = {}) {
+  constructor(headerConfig, {data = []} = {}, sortColumnTitle) {
     this.headerConfig = headerConfig;
     this.data = data;
+    this.sortColumnTitle = sortColumnTitle;
     this.render();
+    this.addEventListeners();
   }
 
   getTableHeader() {
@@ -83,6 +85,30 @@ export default class SortableTable {
 
     this.element = element;
     this.subElements = this.getSubElements(element);
+
+    if(this.sortColumnTitle) {
+      this.sort(this.sortColumnTitle, "asc");
+    }
+  }
+
+  addEventListeners() {
+
+    const titles = this.element.querySelectorAll('[data-sortable="true"]');
+    titles.forEach(arrayItem => {
+      let isAsc = false;
+      const fieldId = arrayItem.dataset.id;
+      arrayItem.addEventListener('pointerdown', () => {
+        let order;
+        if(isAsc) {
+          order = 'asc';
+        } else {
+          order = 'desc';
+        }
+        this.sort(fieldId, order);
+        isAsc = !isAsc;
+      });
+    });
+
   }
 
   remove() {
@@ -103,54 +129,39 @@ export default class SortableTable {
     }, {});
   }
 
-  sort(fieldValue, orderValue) {
-    if(orderValue === "asc") {
-      if(fieldValue === 'price' || fieldValue === 'sales') {
-        this.data = SortableTable.sortAscNum(this.data, fieldValue);
-      } else {
-        this.data = SortableTable.sortAsc(this.data, fieldValue);
-      }
-    } else if(orderValue === "desc") {
-      if(fieldValue === 'price' || fieldValue === 'sales') {
-        this.data = SortableTable.sortDescNum(this.data, fieldValue);
-      } else {
-        this.data = SortableTable.sortDesc(this.data, fieldValue);
-      }
-    }
-
+  sort(field, order) {
+    const sortedData = this.sortData(field, order);
     const allColumns = this.element.querySelectorAll('.sortable-table__cell[data-id]');
-    const currentColumn = this.element.querySelector(`.sortable-table__cell[data-id="${fieldValue}"]`);
+    const currentColumn = this.element.querySelector(`.sortable-table__cell[data-id="${field}"]`);
 
     // NOTE: Remove sorting arrow from other columns
     allColumns.forEach(column => {
       column.dataset.order = '';
     });
 
-    currentColumn.dataset.order = orderValue;
-    this.subElements.body.innerHTML = this.getTableRows(this.data);
+    currentColumn.dataset.order = order;
+
+    this.subElements.body.innerHTML = this.getTableRows(sortedData);
   }
 
-  static sortAsc(arr, fieldValue) {
-    return arr.slice(0).sort((a, b) =>
-      a[fieldValue].localeCompare(b[fieldValue], 'ru-RU', {caseFirst: 'upper'}));
-    }
+  sortData(field, order) {
+    const arr = [...this.data];
+    const column = this.headerConfig.find(item => item.id === field);
+    const {sortType, customSorting} = column;
+    const direction = order === 'asc' ? 1 : -1;
 
-  static sortDesc(arr, fieldValue) {
-    return arr.slice(0).sort((a, b) =>
-      b[fieldValue].localeCompare(a[fieldValue], 'ru-RU', {caseFirst: 'upper'}));
-  }
-
-
-  static sortAscNum(arr, fieldValue) {
-    return arr.slice(0).sort((a, b) =>
-      a[fieldValue]-b[fieldValue]
-    );
-  }
-
-  static sortDescNum(arr, fieldValue) {
-    return arr.slice(0).sort((a, b) =>
-      b[fieldValue]-a[fieldValue]
-    );
+    return arr.sort((a, b) => {
+      switch (sortType) {
+        case 'number':
+          return direction * (a[field] - b[field]);
+        case 'string':
+          return direction * a[field].localeCompare(b[field], 'ru');
+        case 'custom':
+          return direction * customSorting(a, b);
+        default:
+          return direction * (a[field] - b[field]);
+      }
+    });
   }
 
 }
