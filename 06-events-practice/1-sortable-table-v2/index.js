@@ -5,6 +5,8 @@ export default class SortableTable {
   headerConfig = [];
   data = [];
 
+  isAsc = false;
+
   constructor(headerConfig, {data = []} = {}, sortColumnTitle) {
     this.headerConfig = headerConfig;
     this.data = data;
@@ -95,17 +97,16 @@ export default class SortableTable {
 
     const titles = this.element.querySelectorAll('[data-sortable="true"]');
     titles.forEach(arrayItem => {
-      let isAsc = false;
       const fieldId = arrayItem.dataset.id;
       arrayItem.addEventListener('pointerdown', () => {
         let order;
-        if(isAsc) {
+        if(this.isAsc) {
           order = 'asc';
         } else {
           order = 'desc';
         }
         this.sort(fieldId, order);
-        isAsc = !isAsc;
+        this.isAsc = !this.isAsc;
       });
     });
 
