@@ -1,8 +1,7 @@
 class Tooltip {
   element;
-  poverRef;
-  poutRef;
-  pmoveRef;
+  pointerOverReference;
+  pointerMoveReference;
 
   constructor() {
     this.render();
@@ -11,10 +10,7 @@ class Tooltip {
 
   render(id) {
     const element = document.createElement('div');
-    element.innerHTML = `
-      <div class="tooltip">${id}</div>
-    `;
-    this.element = element.firstElementChild;
+    this.element = element;
     document.body.append(this.element);
   }
 
@@ -23,49 +19,50 @@ class Tooltip {
   }
 
   destroy() {
+    document.removeEventListener('pointerover', this.pointerOverReference);
+    document.removeEventListener('pointermove', this.pointerMoveReference);
     this.remove();
-    this.removePointerEvent()
   }
 
   initialize() {
-    document.addEventListener('pointerover', this.poverRef = this.pointerOverEvent.bind(this));
-    document.addEventListener("pointerout", this.poutRef = this.removePointerEvent.bind(this));
+    this.pointerOverReference = this.pointerOverEvent.bind(this);
+    document.addEventListener('pointerover', this.pointerOverReference);
+    document.addEventListener('pointerout', (event) => {
+      if(this.element) {
+        this.element.remove();
+        this.element = null;
+      }
+    });
   }
 
   pointerOverEvent(event) {
-    let target = event.target;
-    let tooltipHtml = target.dataset.tooltip;
+    const target = event.target;
+    const tooltipHtml = target.dataset.tooltip;
     if(!tooltipHtml) return;
 
-    this.render(tooltipHtml);
+    this.element.innerHTML = `
+        <div class="tooltip">${tooltipHtml}</div>
+    `;
+    document.body.append(this.element);
 
-    let tt = this.element;
+    const tooltipElement = this.element;
 
-    tt.style.position = 'absolute';
+    tooltipElement.style.position = 'absolute';
 
     moveAt(event.pageX, event.pageY);
 
     function moveAt(pageX, pageY) {
-      tt.style.left = pageX + 'px';
-      tt.style.top = pageY + 'px';
+      tooltipElement.style.left = pageX + 'px';
+      tooltipElement.style.top = pageY + 'px';
     }
 
     function onMouseMove(event) {
       moveAt(event.pageX, event.pageY);
     }
 
-    document.addEventListener('pointermove', this.poverRef = onMouseMove);
-
+    document.addEventListener('pointermove', onMouseMove);
   }
 
-  removePointerEvent() {
-    document.removeEventListener('pointerover', this.poverRef);
-    document.removeEventListener('pointermove', this.pmoveRef);
-    if(this.element) {
-     this.element.remove();
-     this.element = null;
-    }
-  }
 }
 
 const tooltip = new Tooltip();
