@@ -1,98 +1,186 @@
 export default class DoubleSlider {
   element;
-  static root = document.body;
+  thumbLeftElement;
+  thumbRightElement;
 
-  shiftX;
-  down = false;
+  positionLeftThumb = {
+    shiftX: 0,
+    sliderLeft: 0,
+  };
 
-  constructor({min, max, formatValue, selected = {from: 0, to: 0}} = {}) {
+  positionRightThumb = {
+    shiftX: 0,
+    sliderLeft: 0,
+  };
+
+  constructor({min, max, formatValue, selected = {from: min, to: max}} = {}) {
     this.min = min;
     this.max = max;
     this.formatValue = formatValue;
     this.selected = selected;
-    this.selected.from = selected.from;
-    this.selected.to = selected.to;
     this.render();
-    this.addEventListeners();
+    this.initEventListeners();
   }
 
   get template() {
     return `
        <div id="rSlider" class="range-slider">
-        <span data-element="from">${this.getCorrectRangeFrom()}</span>
+        <span data-element="from"></span>
         <div id="rInner" class="range-slider__inner">
-          <span class="range-slider__progress"></span>
-          <span class="range-slider__thumb-left"></span>
-          <span class="range-slider__thumb-right"></span>
+          <span id="rProgress" class="range-slider__progress" style="left: 0%; right: 0%"></span>
+          <span class="range-slider__thumb-left" style="left: 0%"></span>
+          <span class="range-slider__thumb-right" style="right: 0%"></span>
         </div>
-        <span data-element="to">${this.getCorrectRangeTo()}</span>
+        <span data-element="to"></span>
         </div>
     `;
   }
 
-  getCorrectRangeFrom() {
-    this.min = this.formatValue(this.min);
-    if(this.selected.from) {
-      this.min = this.formatValue(this.selected.from);
-    }
-    return this.min;
-  }
-
-  getCorrectRangeTo() {
-    this.max = this.formatValue(this.max);
-    if(this.selected.to) {
-      this.max = this.formatValue(this.selected.to);
-    }
-    return this.max;
-  }
-
   render() {
-    // const sliderElement = document.createElement('div');
-    // sliderElement.innerHTML = this.template;
-    // this.element = sliderElement.firstElementChild;
-  }
-
-  addEventListeners() {
-
     const sliderElement = document.createElement('div');
     sliderElement.innerHTML = this.template;
     this.element = sliderElement.firstElementChild;
+    this.thumbLeftElement = this.element.querySelector(".range-slider__thumb-left");
+    this.thumbRightElement = this.element.querySelector(".range-slider__thumb-right");
+    this.setCorrectRangeFrom(this.selected.from);
+    this.setCorrectRangeTo(this.selected.to);
+  }
 
-    const thumbLeftElement = this.element.querySelector(".range-slider__thumb-left");
+  setCorrectRangeFrom(from = null) {
+    if(from) {
+      const difference = this.max - this.min;
+      const fromDiff = this.selected.from - this.min;
+      const currentPositionPercent = fromDiff * 100 / difference;
 
-    thumbLeftElement.onmousedown = function(event) {
-      event.preventDefault(); // предотвратить запуск выделения (действие браузера)
+      this.thumbLeftElement.style.left = `${currentPositionPercent}%`;
 
-      let shiftX = event.clientX - thumbLeftElement.getBoundingClientRect().left;
-      // shiftY здесь не нужен, слайдер двигается только по горизонтали
+      const rProgressElement = this.element.querySelector(".range-slider__progress");
+      rProgressElement.style.left = `${currentPositionPercent}%`;
 
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
+      const elem = this.element.querySelector("[data-element=from]");
+      elem.textContent = this.formatValue(from);
+      this.selected.from = from;
+    } else {
+      const elem = this.element.querySelector("[data-element=from]");
+      elem.textContent = this.formatValue(this.min);
+    }
+  }
 
-      function onMouseMove(event) {
-        console.log(rInner.getBoundingClientRect().left);
-        let newLeft = event.clientX - shiftX - rInner.getBoundingClientRect().left;
+  setCorrectRangeTo(to = null) {
+    if(to) {
+      const difference = this.max - this.min;
+      const toDiff = this.max - this.selected.to;
+      const currentPositionPercent = toDiff * 100 / difference;
 
-        // курсор вышел из слайдера => оставить бегунок в его границах.
-        if (newLeft < 0) {
-          newLeft = 0;
-        }
-        let rightEdge = rInner.offsetWidth - thumbLeftElement.offsetWidth;
-        if (newLeft > rightEdge) {
-          newLeft = rightEdge;
-        }
+      this.thumbRightElement.style.right = `${currentPositionPercent}%`;
 
-        thumbLeftElement.style.left = newLeft + 'px';
-      }
+      const rProgressElement = this.element.querySelector(".range-slider__progress");
+      rProgressElement.style.right = `${currentPositionPercent}%`;
 
-      function onMouseUp() {
-        // console.log(shiftX);
-        document.removeEventListener('mouseup', onMouseUp);
-        document.removeEventListener('mousemove', onMouseMove);
-      }
+      const elem = this.element.querySelector("[data-element=to]");
+      elem.textContent = this.formatValue(to);
+      this.selected.to = to;
+    } else {
+      const elem = this.element.querySelector("[data-element=to]");
+      elem.textContent = this.formatValue(this.max);
+    }
+  }
+
+  initEventListeners() {
+    this.thumbLeftElement.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+
+      this.getInitialPositionLeftThumb(event);
+
+      document.addEventListener('pointermove', this.onMouseMoveLeftThumb);
+      document.addEventListener('pointerup', this.onMouseUpLeftThumb);
+    });
+
+    this.thumbRightElement.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+
+      this.getInitialPositionRightThumb(event);
+
+      document.addEventListener('pointermove', this.onMouseMoveRightThumb);
+      document.addEventListener('pointerup', this.onMouseUpRightThumb);
+    })
+
     }
 
+  getInitialPositionLeftThumb(event) {
+    const rInnerElement = document.getElementById("rInner");
+    this.positionLeftThumb.shiftX = event.clientX - this.thumbLeftElement.getBoundingClientRect().left;
+    this.positionLeftThumb.sliderLeft = rInnerElement.getBoundingClientRect().left;
   }
+
+  getInitialPositionRightThumb(event) {
+    const rInnerElement = document.getElementById("rInner");
+    this.positionRightThumb.shiftX = event.clientX - this.thumbRightElement.getBoundingClientRect().left;
+    this.positionRightThumb.sliderLeft = rInnerElement.getBoundingClientRect().left;
+  }
+
+  onMouseMoveLeftThumb = (event) => {
+    const { shiftX, sliderLeft } = this.positionLeftThumb;
+    const rInnerElement = document.getElementById("rInner");
+
+    const currentPositionPx = Math.floor(event.clientX + shiftX - sliderLeft);
+    const currentPositionPercent = currentPositionPx / rInnerElement.getBoundingClientRect().width;
+    let newFromValue = this.min + ((this.max - this.min) * currentPositionPercent);
+
+    if(Math.floor(newFromValue) < this.min) {
+      newFromValue = this.min;
+    }
+
+    if(Math.floor(newFromValue) >= this.selected.to) {
+      newFromValue = this.selected.to;
+    }
+
+    this.setCorrectRangeFrom(Math.floor(newFromValue));
+  }
+
+  onMouseMoveRightThumb = (event) => {
+    const { shiftX, sliderLeft } = this.positionRightThumb;
+    const rInnerElement = document.getElementById("rInner");
+
+    const currentPositionPx = Math.floor(event.clientX + shiftX - sliderLeft);
+    const currentPositionPercent = currentPositionPx / rInnerElement.getBoundingClientRect().width;
+    let newToValue = this.min + ((this.max - this.min) * currentPositionPercent);
+
+    if(Math.floor(newToValue) > this.max) {
+      newToValue = this.max;
+    }
+
+    if(Math.floor(newToValue) <= this.selected.from) {
+      newToValue = this.selected.from;
+    }
+
+    this.setCorrectRangeTo(Math.floor(newToValue));
+  }
+
+  onMouseUpLeftThumb = (event) => {
+
+    const thumbLeftUpEvent = new CustomEvent('range-select', {
+      detail: this.selected,
+    });
+
+    this.element.dispatchEvent(thumbLeftUpEvent);
+
+    document.removeEventListener('pointerup', this.onMouseUpLeftThumb);
+    document.removeEventListener('pointermove', this.onMouseMoveLeftThumb);
+  }
+
+  onMouseUpRightThumb = (event) => {
+
+    const thumbRightUpEvent = new CustomEvent('range-select', {
+      detail: this.selected,
+    });
+
+    this.element.dispatchEvent(thumbRightUpEvent);
+
+    document.removeEventListener('pointerup', this.onMouseUpRightThumb);
+    document.removeEventListener('pointermove', this.onMouseMoveRightThumb);
+  }
+
 
   remove() {
     this.element.remove();
