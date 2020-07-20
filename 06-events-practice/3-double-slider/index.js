@@ -42,6 +42,8 @@ export default class DoubleSlider {
     this.element = sliderElement.firstElementChild;
     this.thumbLeftElement = this.element.querySelector(".range-slider__thumb-left");
     this.thumbRightElement = this.element.querySelector(".range-slider__thumb-right");
+    this.thumbLeftElement.ondragstart = () => false;
+    this.thumbRightElement.ondragstart = () => false;
     this.setCorrectRangeFrom(this.selected.from);
     this.setCorrectRangeTo(this.selected.to);
   }
@@ -49,18 +51,19 @@ export default class DoubleSlider {
   setCorrectRangeFrom(from = null) {
     if(from) {
       const difference = this.max - this.min;
-      const fromDiff = this.selected.from - this.min;
+      const fromDiff = from - this.min;
       const currentPositionPercent = fromDiff * 100 / difference;
 
-      this.thumbLeftElement.style.left = `${currentPositionPercent}%`;
+      this.thumbLeftElement.style.left = `${Math.floor(currentPositionPercent)}%`;
 
       const rProgressElement = this.element.querySelector(".range-slider__progress");
-      rProgressElement.style.left = `${currentPositionPercent}%`;
+      rProgressElement.style.left = `${Math.floor(currentPositionPercent)}%`;
 
       const elem = this.element.querySelector("[data-element=from]");
       elem.textContent = this.formatValue(from);
       this.selected.from = from;
-    } else {
+    }
+     else {
       const elem = this.element.querySelector("[data-element=from]");
       elem.textContent = this.formatValue(this.min);
     }
@@ -69,13 +72,13 @@ export default class DoubleSlider {
   setCorrectRangeTo(to = null) {
     if(to) {
       const difference = this.max - this.min;
-      const toDiff = this.max - this.selected.to;
+      const toDiff = this.max - to;
       const currentPositionPercent = toDiff * 100 / difference;
 
-      this.thumbRightElement.style.right = `${currentPositionPercent}%`;
+      this.thumbRightElement.style.right = `${Math.floor(currentPositionPercent)}%`;
 
       const rProgressElement = this.element.querySelector(".range-slider__progress");
-      rProgressElement.style.right = `${currentPositionPercent}%`;
+      rProgressElement.style.right = `${Math.floor(currentPositionPercent)}%`;
 
       const elem = this.element.querySelector("[data-element=to]");
       elem.textContent = this.formatValue(to);
@@ -119,7 +122,7 @@ export default class DoubleSlider {
     this.positionRightThumb.sliderLeft = rInnerElement.getBoundingClientRect().left;
   }
 
-  onMouseMoveLeftThumb = (event) => {
+  onMouseMoveLeftThumb = event => {
     const { shiftX, sliderLeft } = this.positionLeftThumb;
     const rInnerElement = document.getElementById("rInner");
 
@@ -131,14 +134,14 @@ export default class DoubleSlider {
       newFromValue = this.min;
     }
 
-    if(Math.floor(newFromValue) >= this.selected.to) {
+    if(Math.floor(newFromValue) > this.selected.to) {
       newFromValue = this.selected.to;
     }
 
     this.setCorrectRangeFrom(Math.floor(newFromValue));
   }
 
-  onMouseMoveRightThumb = (event) => {
+  onMouseMoveRightThumb = event => {
     const { shiftX, sliderLeft } = this.positionRightThumb;
     const rInnerElement = document.getElementById("rInner");
 
@@ -150,14 +153,14 @@ export default class DoubleSlider {
       newToValue = this.max;
     }
 
-    if(Math.floor(newToValue) <= this.selected.from) {
+    if(Math.floor(newToValue) < this.selected.from) {
       newToValue = this.selected.from;
     }
 
     this.setCorrectRangeTo(Math.floor(newToValue));
   }
 
-  onMouseUpLeftThumb = (event) => {
+  onMouseUpLeftThumb = () => {
 
     const thumbLeftUpEvent = new CustomEvent('range-select', {
       detail: this.selected,
@@ -169,7 +172,7 @@ export default class DoubleSlider {
     document.removeEventListener('pointermove', this.onMouseMoveLeftThumb);
   }
 
-  onMouseUpRightThumb = (event) => {
+  onMouseUpRightThumb = () => {
 
     const thumbRightUpEvent = new CustomEvent('range-select', {
       detail: this.selected,

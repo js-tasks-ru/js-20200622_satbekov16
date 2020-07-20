@@ -1,14 +1,17 @@
+import ordersData from './__mocks__/orders-data.js'
 export default class ColumnChart {
-
   element;
   subElements = {};
   chartHeight = 50;
 
-  constructor({data = [], label = '', link = '', value = 0} = {}) {
-    this.data = data;
+  result = Object.values(ordersData);
+
+  constructor({url = '', range = {from: Date, to: Date}, label = '', link = '', formatHeading = []} = {}) {
+    this.url = url;
+    this.range = range;
     this.label = label;
     this.link = link;
-    this.value = value;
+    this.formatHeading = formatHeading;
     this.render();
   }
 
@@ -21,14 +24,14 @@ export default class ColumnChart {
         </div>
         <div class="column-chart__container">
           <div data-element="header" class="column-chart__header">
-            ${this.value}
           </div>
           <div data-element="body" class="column-chart__chart">
-            ${this.getColumnBody(this.data)}
+            ${this.getColumnBody(this.result)}
           </div>
         </div>
       </div>
     `;
+
   }
 
   render() {
@@ -38,12 +41,43 @@ export default class ColumnChart {
 
     this.element = element.firstElementChild;
 
-    if(this.data.length) {
+    if(ordersData) {
       this.element.classList.remove('column-chart_loading');
     }
 
     this.subElements = this.getSubElements(this.element);
 
+  }
+
+  async update(dateFrom, dateTo) {
+
+    const reqDateFrom = this.formatDate(dateFrom);
+    const reqDateTo = this.formatDate(dateTo);
+    const requestURL = `https://course-js.javascript.ru/${this.url}?from=${reqDateFrom}&to=${reqDateTo}`;
+    const response = await fetch(requestURL);
+    if(response.ok) {
+      response.json().then(data => {
+        const res = Object.values(data);
+        this.subElements.body.innerHTML = this.getColumnBody(res);
+      })
+    } else {
+      alert('Error HTTP: ' + response.status)
+    }
+    
+  }
+
+  formatDate(date) {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    let year = d.getFullYear();
+
+    if (month.length < 2)
+      month = '0' + month;
+    if (day.length < 2)
+      day = '0' + day;
+
+    return [year, month, day].join('-');
   }
 
   getLink() {
@@ -60,9 +94,9 @@ export default class ColumnChart {
     }).join('');
   }
 
-  update({bodyData: newData}) {
-    this.subElements.body.innerHTML = this.getColumnBody(newData);
-  }
+  // update({bodyData: newData}) {
+  //   this.subElements.body.innerHTML = this.getColumnBody(newData);
+  // }
 
   getSubElements(element) {
     const elements = element.querySelectorAll('[data-element]');
@@ -84,3 +118,9 @@ export default class ColumnChart {
   }
 
 }
+
+
+
+
+
+
