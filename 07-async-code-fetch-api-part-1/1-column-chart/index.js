@@ -63,7 +63,6 @@ export default class ColumnChart {
     } else {
       alert('Error HTTP: ' + response.status)
     }
-    
   }
 
   formatDate(date) {
