@@ -1,18 +1,18 @@
-import ordersData from './__mocks__/orders-data.js'
+import fetchJson from './utils/fetch-json.js';
+
 export default class ColumnChart {
   element;
   subElements = {};
   chartHeight = 50;
 
-  result = Object.values(ordersData);
-
-  constructor({url = '', range = {from: Date, to: Date}, label = '', link = '', formatHeading = []} = {}) {
-    this.url = url;
+  constructor({url = '', range = {from: new Date(), to: new Date()}, label = '', link = '', formatHeading = data => data} = {}) {
+    this.url = new URL(url, 'https://course-js.javascript.ru');
     this.range = range;
     this.label = label;
     this.link = link;
     this.formatHeading = formatHeading;
     this.render();
+    this.fetchData(this.range.from, this.range.to);
   }
 
   get template() {
@@ -26,57 +26,49 @@ export default class ColumnChart {
           <div data-element="header" class="column-chart__header">
           </div>
           <div data-element="body" class="column-chart__chart">
-            ${this.getColumnBody(this.result)}
           </div>
         </div>
       </div>
     `;
-
   }
 
   render() {
-
     const element = document.createElement("div");
     element.innerHTML = this.template;
-
     this.element = element.firstElementChild;
+    this.subElements = this.getSubElements(this.element);
+  }
 
-    if(ordersData) {
+  async fetchData(dateFrom, dateTo) {
+    this.element.classList.add('column-chart_loading');
+    this.subElements.header.textContent = '';
+    this.subElements.body.innerHTML = '';
+
+    this.url.searchParams.set('from', dateFrom.toISOString());
+    this.url.searchParams.set('to', dateTo.toISOString());
+
+    const chartData = await fetchJson(this.url);
+
+    this.setNewRange(dateFrom, dateTo);
+
+    if (Object.values(chartData).length && chartData) {
+      this.subElements.header.textContent = this.getHeaderValue(chartData);
+      this.subElements.body.innerHTML = this.getColumnBody(chartData);
       this.element.classList.remove('column-chart_loading');
     }
-
-    this.subElements = this.getSubElements(this.element);
-
   }
 
   async update(dateFrom, dateTo) {
-
-    const reqDateFrom = this.formatDate(dateFrom);
-    const reqDateTo = this.formatDate(dateTo);
-    const requestURL = `https://course-js.javascript.ru/${this.url}?from=${reqDateFrom}&to=${reqDateTo}`;
-    const response = await fetch(requestURL);
-    if(response.ok) {
-      response.json().then(data => {
-        const res = Object.values(data);
-        this.subElements.body.innerHTML = this.getColumnBody(res);
-      })
-    } else {
-      alert('Error HTTP: ' + response.status)
-    }
+    return await this.fetchData(dateFrom, dateTo);
   }
 
-  formatDate(date) {
-    const d = new Date(date);
-    let month = '' + (d.getMonth() + 1);
-    let day = '' + d.getDate();
-    let year = d.getFullYear();
+  setNewRange(dateFrom, dateTo) {
+    this.range.from = dateFrom;
+    this.range.to = dateTo;
+  }
 
-    if (month.length < 2)
-      month = '0' + month;
-    if (day.length < 2)
-      day = '0' + day;
-
-    return [year, month, day].join('-');
+  getHeaderValue(data) {
+    return this.formatHeading(Object.values(data).reduce((accum, item) => (accum + item), 0));
   }
 
   getLink() {
@@ -84,18 +76,21 @@ export default class ColumnChart {
   }
 
   getColumnBody(data) {
-    const maxValue = Math.max(...data);
+    const maxValue = Math.max(...Object.values(data));
 
-    return data.map(item => {
+    return Object.entries(data).map(([key, value]) => {
       const scale = this.chartHeight / maxValue;
-      const dataTooltipValue = (item / maxValue * 100).toFixed(0);
-      return `<div style="--value: ${Math.floor(item * scale)}" data-tooltip="${dataTooltipValue}%"></div>`
+      const dataTooltipValue = (value / maxValue * 100).toFixed(0);
+      const dataTooltip = `
+        <span>
+          <small>${key.toLocaleString('default', {dateStyle: 'medium'})}</small>
+        <br>
+        <strong>${dataTooltipValue}%</strong>
+        </span>
+      `;
+      return `<div style="--value: ${Math.floor(value * scale)}" data-tooltip="${dataTooltip}%"></div>`
     }).join('');
   }
-
-  // update({bodyData: newData}) {
-  //   this.subElements.body.innerHTML = this.getColumnBody(newData);
-  // }
 
   getSubElements(element) {
     const elements = element.querySelectorAll('[data-element]');
@@ -106,14 +101,8 @@ export default class ColumnChart {
     }, {});
   }
 
-  remove() {
-    this.element.remove();
-  }
-
   destroy() {
-    this.remove();
-    this.element = null;
-    this.subElements = {};
+    this.element.remove();
   }
 
 }

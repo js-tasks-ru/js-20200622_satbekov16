@@ -13,6 +13,66 @@ export default class DoubleSlider {
     sliderLeft: 0,
   };
 
+  onMouseMoveLeftThumb = event => {
+    const { shiftX, sliderLeft } = this.positionLeftThumb;
+    const rInnerElement = document.getElementById("rInner");
+
+    const currentPositionPx = Math.floor(event.clientX + shiftX - sliderLeft);
+    const currentPositionPercent = currentPositionPx / rInnerElement.getBoundingClientRect().width;
+    let newFromValue = this.min + ((this.max - this.min) * currentPositionPercent);
+
+    if(Math.floor(newFromValue) < this.min) {
+      newFromValue = this.min;
+    }
+
+    if(Math.floor(newFromValue) > this.selected.to) {
+      newFromValue = this.selected.to;
+    }
+
+    this.setCorrectRangeFrom(Math.floor(newFromValue));
+  }
+
+  onMouseMoveRightThumb = event => {
+    const { shiftX, sliderLeft } = this.positionRightThumb;
+    const rInnerElement = document.getElementById("rInner");
+
+    const currentPositionPx = Math.floor(event.clientX + shiftX - sliderLeft);
+    const currentPositionPercent = currentPositionPx / rInnerElement.getBoundingClientRect().width;
+    let newToValue = this.min + ((this.max - this.min) * currentPositionPercent);
+
+    if(Math.floor(newToValue) > this.max) {
+      newToValue = this.max;
+    }
+
+    if(Math.floor(newToValue) < this.selected.from) {
+      newToValue = this.selected.from;
+    }
+
+    this.setCorrectRangeTo(Math.floor(newToValue));
+  }
+
+  onMouseUpLeftThumb = () => {
+    const thumbLeftUpEvent = new CustomEvent('range-select', {
+      detail: this.selected,
+    });
+
+    this.element.dispatchEvent(thumbLeftUpEvent);
+
+    document.removeEventListener('pointerup', this.onMouseUpLeftThumb);
+    document.removeEventListener('pointermove', this.onMouseMoveLeftThumb);
+  }
+
+  onMouseUpRightThumb = () => {
+    const thumbRightUpEvent = new CustomEvent('range-select', {
+      detail: this.selected,
+    });
+
+    this.element.dispatchEvent(thumbRightUpEvent);
+
+    document.removeEventListener('pointerup', this.onMouseUpRightThumb);
+    document.removeEventListener('pointermove', this.onMouseMoveRightThumb);
+  }
+
   constructor({min, max, formatValue, selected = {from: min, to: max}} = {}) {
     this.min = min;
     this.max = max;
@@ -121,69 +181,6 @@ export default class DoubleSlider {
     this.positionRightThumb.shiftX = event.clientX - this.thumbRightElement.getBoundingClientRect().left;
     this.positionRightThumb.sliderLeft = rInnerElement.getBoundingClientRect().left;
   }
-
-  onMouseMoveLeftThumb = event => {
-    const { shiftX, sliderLeft } = this.positionLeftThumb;
-    const rInnerElement = document.getElementById("rInner");
-
-    const currentPositionPx = Math.floor(event.clientX + shiftX - sliderLeft);
-    const currentPositionPercent = currentPositionPx / rInnerElement.getBoundingClientRect().width;
-    let newFromValue = this.min + ((this.max - this.min) * currentPositionPercent);
-
-    if(Math.floor(newFromValue) < this.min) {
-      newFromValue = this.min;
-    }
-
-    if(Math.floor(newFromValue) > this.selected.to) {
-      newFromValue = this.selected.to;
-    }
-
-    this.setCorrectRangeFrom(Math.floor(newFromValue));
-  }
-
-  onMouseMoveRightThumb = event => {
-    const { shiftX, sliderLeft } = this.positionRightThumb;
-    const rInnerElement = document.getElementById("rInner");
-
-    const currentPositionPx = Math.floor(event.clientX + shiftX - sliderLeft);
-    const currentPositionPercent = currentPositionPx / rInnerElement.getBoundingClientRect().width;
-    let newToValue = this.min + ((this.max - this.min) * currentPositionPercent);
-
-    if(Math.floor(newToValue) > this.max) {
-      newToValue = this.max;
-    }
-
-    if(Math.floor(newToValue) < this.selected.from) {
-      newToValue = this.selected.from;
-    }
-
-    this.setCorrectRangeTo(Math.floor(newToValue));
-  }
-
-  onMouseUpLeftThumb = () => {
-
-    const thumbLeftUpEvent = new CustomEvent('range-select', {
-      detail: this.selected,
-    });
-
-    this.element.dispatchEvent(thumbLeftUpEvent);
-
-    document.removeEventListener('pointerup', this.onMouseUpLeftThumb);
-    document.removeEventListener('pointermove', this.onMouseMoveLeftThumb);
-  }
-
-  onMouseUpRightThumb = () => {
-
-    const thumbRightUpEvent = new CustomEvent('range-select', {
-      detail: this.selected,
-    });
-
-    this.element.dispatchEvent(thumbRightUpEvent);
-
-    document.removeEventListener('pointerup', this.onMouseUpRightThumb);
-    document.removeEventListener('pointermove', this.onMouseMoveRightThumb);
-  }
-
 
   remove() {
     this.element.remove();
