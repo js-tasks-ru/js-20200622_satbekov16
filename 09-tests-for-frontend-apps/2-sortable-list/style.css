@@ -33,6 +33,9 @@ body {
 }
 
 .sortable-list__item {
+
+  width: 500px;
+
   min-height: 60px;
   background-color: var(--white);
   list-style: none;

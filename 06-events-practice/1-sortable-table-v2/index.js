@@ -1,42 +1,52 @@
 export default class SortableTable {
-
   element;
   subElements = {};
   headerConfig = [];
   data = [];
 
-  isAsc = false;
-
-  constructor(headerConfig, {data = []} = {}, sortColumnTitle) {
+  constructor(headerConfig, {data = []} = {},
+              defaultSorting = {id: headerConfig.find(item => item.sortable).id, order: 'asc'}) {
     this.headerConfig = headerConfig;
     this.data = data;
-    this.sortColumnTitle = sortColumnTitle;
+    this.defaultSorting = defaultSorting;
     this.render();
     this.addEventListeners();
+  }
+
+  getTable(data) {
+    return `
+      <div class="sortable-table">
+        ${this.getTableHeader()}
+        ${this.getTableBody(data)}
+      </div>
+    `;
   }
 
   getTableHeader() {
     return `
       <div data-element="header" class="sortable-table__header sortable-table__row">
-        ${this.headerConfig.map(item => this.getHeaderRow(item)).join('')}</div>
-    `;
-  }
-
-  getHeaderRow({id, title, sortable}) {
-    return `
-      <div class="sortable-table__cell" data-id="${id}" data-sortable="${sortable}">
-        <span>${title}</span>
-        ${this.getHeaderSortingArrow()}
+        ${this.headerConfig.map(item => this.getHeaderRow(item)).join('')}
       </div>
     `;
   }
 
-  getHeaderSortingArrow() {
+  getHeaderRow({id, title, sortable}) {
+    const order = this.defaultSorting.id === id ? this.defaultSorting.order : 'asc';
+
     return `
-      <span data-element="arrow" class="sortable-table__sort-arrow">
-        <span class="sort-arrow"></span>
-      </span>
+      <div class="sortable-table__cell" data-id="${id}" data-sortable="${sortable}" data-order="${order}">
+        <span>${title}</span>
+        ${this.getHeaderSortingArrow(id)}
+      </div>
     `;
+  }
+
+  getHeaderSortingArrow(id) {
+    const isOrder = this.defaultSorting.id === id ? this.defaultSorting.order : '';
+    return isOrder ?
+      `<span data-element="arrow" class="sortable-table__sort-arrow">
+        <span class="sort-arrow"></span>
+      </span>` : '';
   }
 
   getTableBody(data) {
@@ -70,55 +80,70 @@ export default class SortableTable {
     }).join('');
   }
 
-  getTable(data) {
-    return `
-      <div class="sortable-table">
-        ${this.getTableHeader()}
-        ${this.getTableBody(data)}
-      </div>`;
-  }
-
   render() {
-    const $wrapper = document.createElement('div');
+    const { id, order } = this.defaultSorting;
+    const element = document.createElement('div');
+    const sorted = this.sortByColumnTitle(id, order);
 
-    $wrapper.innerHTML = this.getTable(this.data);
-
-    const element = $wrapper.firstElementChild;
-
-    this.element = element;
+    element.innerHTML = this.getTable(sorted);
+    this.element = element.firstElementChild;
     this.subElements = this.getSubElements(element);
-
-    if(this.sortColumnTitle) {
-      this.sort(this.sortColumnTitle, "asc");
-    }
   }
 
   addEventListeners() {
+    const columnRows = this.element.querySelectorAll('[data-sortable="true"]');
 
-    const titles = this.element.querySelectorAll('[data-sortable="true"]');
-    titles.forEach(arrayItem => {
-      const fieldId = arrayItem.dataset.id;
-      arrayItem.addEventListener('pointerdown', () => {
-        let order;
-        if(this.isAsc) {
-          order = 'asc';
+    columnRows.forEach(columnItem => {
+      let eventTriggered = false;
+
+      columnItem.addEventListener('pointerdown', (event) => {
+        const arrow = columnItem.querySelector('.sortable-table__sort-arrow');
+
+        if(!arrow) {
+          columnItem.append(this.subElements.arrow);
+          columnItem.dataset.order = 'desc';
+          this.updateRowsByOrder(columnItem)
+          eventTriggered = true;
         } else {
-          order = 'desc';
+          columnItem.dataset.order = eventTriggered === false ? 'desc' : 'asc';
+          this.updateRowsByOrder(columnItem);
+          eventTriggered = !eventTriggered;
         }
-        this.sort(fieldId, order);
-        this.isAsc = !this.isAsc;
+
       });
     });
-
   }
 
-  remove() {
-    this.element.remove();
+  updateRowsByOrder(columnItem) {
+    const { id, order } = columnItem.dataset;
+    const sorted = this.sortByColumnTitle(id, order);
+    this.subElements.body.innerHTML = this.getTableRows(sorted);
   }
 
-  destroy() {
-    this.remove();
-    this.subElements = {};
+  sortByColumnTitle(field, order) {
+    const deepCopy = [...this.data];
+    const column = this.headerConfig.find(item => item.id === field);
+    const { sortType, customSorting } = column;
+
+    return deepCopy.sort((a, b) => {
+      switch(sortType) {
+        case 'string':
+          if(order === 'asc') {
+            return a[field].localeCompare(b[field], 'ru-RU', {caseFirst: 'upper'});
+          }
+          return b[field].localeCompare(a[field], 'ru-RU', {caseFirst: 'upper'});
+        case 'number':
+          if(order === 'asc') {
+            return a[field] - b[field];
+          }
+          return b[field] - a[field];
+        case 'custom':
+          if(order === 'asc') {
+            return customSorting(a, b);
+          }
+          return customSorting(b, a);
+      }
+    });
   }
 
   getSubElements(element) {
@@ -130,39 +155,13 @@ export default class SortableTable {
     }, {});
   }
 
-  sort(field, order) {
-    const sortedData = this.sortData(field, order);
-    const allColumns = this.element.querySelectorAll('.sortable-table__cell[data-id]');
-    const currentColumn = this.element.querySelector(`.sortable-table__cell[data-id="${field}"]`);
-
-    // NOTE: Remove sorting arrow from other columns
-    allColumns.forEach(column => {
-      column.dataset.order = '';
-    });
-
-    currentColumn.dataset.order = order;
-
-    this.subElements.body.innerHTML = this.getTableRows(sortedData);
+  remove() {
+    this.element.remove();
   }
 
-  sortData(field, order) {
-    const arr = [...this.data];
-    const column = this.headerConfig.find(item => item.id === field);
-    const {sortType, customSorting} = column;
-    const direction = order === 'asc' ? 1 : -1;
-
-    return arr.sort((a, b) => {
-      switch (sortType) {
-        case 'number':
-          return direction * (a[field] - b[field]);
-        case 'string':
-          return direction * a[field].localeCompare(b[field], 'ru');
-        case 'custom':
-          return direction * customSorting(a, b);
-        default:
-          return direction * (a[field] - b[field]);
-      }
-    });
+  destroy() {
+    this.remove();
+    this.subElements = {};
   }
 
 }
