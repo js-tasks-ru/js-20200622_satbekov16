@@ -25,6 +25,8 @@ export default class SortableList {
       currentItem.style.height = `${currentItem.offsetHeight}px`;
       currentItem.classList.add('sortable-list__item_dragging');
 
+      console.log(currentItem.style.width, currentItem.style.height);
+
       this.initPlaceHolder(currentItem.style.width, currentItem.style.height);
       this.currentDraggingItem = currentItem;
       currentItem.after(this.placeHolderElement)
@@ -53,7 +55,7 @@ export default class SortableList {
       for(const [index, child] of Array.from(this.element.children).entries()) {
         const childCoords = child.getBoundingClientRect();
         if(child !== this.currentDraggingItem) {
-          if(event.clientY - 20 < childCoords.bottom - child.offsetHeight / 2) {
+          if(event.clientY - 25 < childCoords.bottom - child.offsetHeight / 2) {
             this.rearrangePlaceHolder(index);
           } else {
             this.rearrangePlaceHolder(index + 1);
@@ -83,8 +85,8 @@ export default class SortableList {
   initPlaceHolder(width, height) {
     this.placeHolderElement = document.createElement('div');
     this.placeHolderElement.classList.add('sortable-list__placeholder');
-    this.placeHolderElement.style.width = `${width}px`;
-    this.placeHolderElement.style.height = `${height}px`;
+    this.placeHolderElement.style.width = width;
+    this.placeHolderElement.style.height = height;
   }
 
   rearrangePlaceHolder(index) {
