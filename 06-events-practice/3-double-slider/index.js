@@ -123,7 +123,7 @@ export default class DoubleSlider {
       elem.textContent = this.formatValue(from);
       this.selected.from = from;
     }
-     else {
+    else {
       const elem = this.element.querySelector("[data-element=from]");
       elem.textContent = this.formatValue(this.min);
     }
@@ -168,7 +168,7 @@ export default class DoubleSlider {
       document.addEventListener('pointerup', this.onMouseUpRightThumb);
     })
 
-    }
+  }
 
   getInitialPositionLeftThumb(event) {
     const rInnerElement = document.getElementById("rInner");

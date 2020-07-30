@@ -65,7 +65,7 @@ export default class SortableList {
     }
   }
 
-  pointerUpHandler = (event) => {
+  pointerUpHandler = () => {
     this.currentDraggingItem.classList.remove('sortable-list__item_dragging');
     this.placeHolderElement.replaceWith(this.currentDraggingItem);
 
