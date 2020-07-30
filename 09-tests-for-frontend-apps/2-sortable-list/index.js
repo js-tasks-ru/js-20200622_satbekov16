@@ -15,9 +15,6 @@ export default class SortableList {
     if(event.target.closest('[data-grab-handle]')) {
       event.preventDefault();
       this.currentItemIndex = Array.from(this.element.children).indexOf(currentItem);
-
-      console.error('currentItem', currentItem);
-      console.error('currentItem.getBoundingClientRect()', currentItem.getBoundingClientRect());
       
       this.mouseOffset = {
         x: event.clientX - currentItem.getBoundingClientRect().x,
