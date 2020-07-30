@@ -16,6 +16,9 @@ export default class SortableList {
       event.preventDefault();
       this.currentItemIndex = Array.from(this.element.children).indexOf(currentItem);
 
+      console.error('currentItem', currentItem);
+      console.error('currentItem.getBoundingClientRect()', currentItem.getBoundingClientRect());
+      
       this.mouseOffset = {
         x: event.clientX - currentItem.getBoundingClientRect().x,
         y: event.clientY - currentItem.getBoundingClientRect().y,
@@ -24,8 +27,6 @@ export default class SortableList {
       currentItem.style.width = `${currentItem.offsetWidth}px`;
       currentItem.style.height = `${currentItem.offsetHeight}px`;
       currentItem.classList.add('sortable-list__item_dragging');
-
-      console.log(currentItem.style.width, currentItem.style.height);
 
       this.initPlaceHolder(currentItem.style.width, currentItem.style.height);
       this.currentDraggingItem = currentItem;
