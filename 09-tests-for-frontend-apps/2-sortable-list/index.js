@@ -1,10 +1,8 @@
 export default class SortableList {
-
   element;
-  sortableListContainer;
-  currentDraggingElement;
-
+  currentDraggingItem;
   placeHolderElement;
+  currentItemIndex;
 
   mouseOffset = {
     x: 0,
@@ -12,74 +10,74 @@ export default class SortableList {
   };
 
   pointerDownHandler = (event) => {
-    console.log(this.element);
-    console.log('HELLO');
     const currentItem = event.target.closest('.sortable-list__item');
 
-    // this.mouseOffset = {
-    //   x: currentItem.offsetLeft - event.clientX,
-    //   y: currentItem.offsetTop - event.clientY,
-    // };
-    //
+    if(event.target.closest('[data-grab-handle]')) {
+      event.preventDefault();
+      this.currentItemIndex = Array.from(this.element.children).indexOf(currentItem);
 
+      this.mouseOffset = {
+        x: event.clientX - currentItem.getBoundingClientRect().x,
+        y: event.clientY - currentItem.getBoundingClientRect().y,
+      };
 
-    const rect = currentItem.getBoundingClientRect();
+      currentItem.style.width = `${currentItem.offsetWidth}px`;
+      currentItem.style.height = `${currentItem.offsetHeight}px`;
+      currentItem.classList.add('sortable-list__item_dragging');
 
-    this.mouseOffset = {
-      x: event.clientX - rect.x,
-      y: event.clientY - rect.y,
-    };
+      this.initPlaceHolder(currentItem.style.width, currentItem.style.height);
+      this.currentDraggingItem = currentItem;
+      currentItem.after(this.placeHolderElement)
+      this.element.appendChild(currentItem);
 
-    event.preventDefault();
+      this.moveCurrentItem(event.clientX, event.clientY);
 
-    this.currentDraggingElement = currentItem;
+      document.addEventListener('pointermove', this.pointerMoveHandler);
+      document.addEventListener('pointerup', this.pointerUpHandler);
 
-    this.currentDraggingElement.style.width = `${this.currentDraggingElement.offsetWidth}px`;
-    this.currentDraggingElement.style.height = `${this.currentDraggingElement.offsetHeight}px`;
-    this.currentDraggingElement.classList.add('sortable-list__item_dragging');
-    this.element.append(this.currentDraggingElement);
-    this.moveCurrentItem(event.clientX, event.clientY);
-    // this.sortableListContainer.prepend(this.currentDraggingElement);
-    // this.initPlaceHolder(currentItem.offsetWidth, currentItem.offsetHeight);
-    // this.currentDraggingElement.after(this.placeHolderElement);
-
-    // document.addEventListener('pointermove', this.pointerMoveHandler);
-    // document.addEventListener('pointerup', this.pointerUpHandler);
+    } else if(event.target.closest('[data-delete-handle]')) {
+      event.preventDefault();
+      this.removeListItem(currentItem);
+    }
   }
 
   pointerMoveHandler = (event) => {
     event.preventDefault();
-
-    const currentItem = event.target.closest('.sortable-list__item');
-    // this.moveCurrentItem(event, currentItem);
     this.moveCurrentItem(event.clientX, event.clientY);
 
-    // if(event.clientY < this.element.firstElementChild.getBoundingClientRect().top) {
-    //   this.rearrangePlaceHolder(0);
-    // }
+    if(event.clientY < this.element.firstElementChild.getBoundingClientRect().top) {
+      this.rearrangePlaceHolder(0);
+    } else if(event.clientY > this.element.lastElementChild.getBoundingClientRect().bottom) {
+      this.rearrangePlaceHolder(this.element.children.length);
+    } else {
+      for(const [index, child] of Array.from(this.element.children).entries()) {
+        const childCoords = child.getBoundingClientRect();
+        if(child !== this.currentDraggingItem) {
+          if(event.clientY - 20 < childCoords.bottom - child.offsetHeight / 2) {
+            this.rearrangePlaceHolder(index);
+          } else {
+            this.rearrangePlaceHolder(index + 1);
+          }
+        }
+      }
+    }
   }
 
   pointerUpHandler = (event) => {
+    this.currentDraggingItem.classList.remove('sortable-list__item_dragging');
+    this.placeHolderElement.replaceWith(this.currentDraggingItem);
 
-    console.log(this.element);
+    this.currentDraggingItem.style.left = '';
+    this.currentDraggingItem.style.top = '';
 
-    // const rect = this.placeHolderElement.getBoundingClientRect();
-    // this.currentDraggingElement.style.left = rect.x-7+'px';
-    // this.currentDraggingElement.style.top = rect.y-27+'px';
-    this.currentDraggingElement.classList.remove('sortable-list__item_dragging');
-    // this.placeHolderElement.replaceWith(this.currentDraggingElement);
-    document.removeEventListener('pointermove', this.pointerMoveHandler);
-    document.removeEventListener('pointerdown', this.pointerDownHandler);
-    document.removeEventListener('pointerup', this.pointerUpHandler);
+    this.currentDraggingItem = null;
+    this.removeEventListeners();
   }
 
   moveCurrentItem(x, y) {
-    // item.style.position = 'absolute';
-    // item.style.left = event.clientX + this.mouseOffset.x + 'px';
-    // item.style.top = event.clientY + this.mouseOffset.y + 'px';
-
-    this.currentDraggingElement.style.left = `${x - this.mouseOffset.x}px`;
-    this.currentDraggingElement.style.top = `${y - this.mouseOffset.y}px`;
+    this.currentDraggingItem.position = 'absolute';
+    this.currentDraggingItem.style.left = `${x - this.mouseOffset.x}px`;
+    this.currentDraggingItem.style.top = `${y - this.mouseOffset.y}px`;
   }
 
   initPlaceHolder(width, height) {
@@ -91,7 +89,9 @@ export default class SortableList {
 
   rearrangePlaceHolder(index) {
     const child = this.element.children[index];
-    if(child !== this.placeHolderElement) this.element.insertBefore(this.placeHolderElement, child);
+    if(child !== this.placeHolderElement) {
+      this.element.insertBefore(this.placeHolderElement, child);
+    }
   }
 
   constructor({items: listData = []} = {}) {
@@ -100,29 +100,34 @@ export default class SortableList {
     this.initEventListeners();
   }
 
-  get template() {
-    return `
-      <ul class="sortable-list">
-      </ul>
-    `;
+  initEventListeners() {
+    this.element.addEventListener('pointerdown', this.pointerDownHandler);
   }
 
   render() {
-    const mainListElement = document.createElement('div');
-    mainListElement.innerHTML = this.template;
+    const mainListElement = document.createElement('ul');
+    mainListElement.classList.add('sortable-list');
     this.element = mainListElement;
 
-    this.sortableListContainer = this.element.querySelector('.sortable-list');
-
-    this.listData.forEach(item => {
-      item.classList.add('sortable-list__item');
-      item.ondragstart = () => false;
-      this.sortableListContainer.append(item);
+    this.listData.forEach(listItem => {
+      this.addListItem(listItem);
     });
   }
 
-  initEventListeners() {
-    this.element.addEventListener('pointerdown', this.pointerDownHandler);
+  addListItem(listItem) {
+    listItem.classList.add('sortable-list__item');
+    listItem.ondragstart = () => false;
+    this.element.append(listItem);
+  }
+
+  removeListItem(listItem) {
+    listItem.remove();
+  }
+
+  removeEventListeners() {
+    document.removeEventListener('pointerdown', this.pointerDownHandler);
+    document.removeEventListener('pointermove', this.pointerMoveHandler);
+    document.removeEventListener('pointerup', this.pointerUpHandler);
   }
 
   remove() {
@@ -131,5 +136,6 @@ export default class SortableList {
 
   destroy() {
     this.remove();
+    this.removeEventListeners();
   }
 }
