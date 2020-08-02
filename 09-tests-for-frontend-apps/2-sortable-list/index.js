@@ -13,11 +13,11 @@ export default class SortableList {
     const currentItem = event.target.closest('.sortable-list__item');
 
     if(currentItem) {
-      if(event.target.closest('[data-grab-handle]')){
+      if (event.target.closest('[data-grab-handle]')) {
         event.preventDefault();
         this.dragListItem(currentItem, event);
       }
-      if(event.target.closest('[data-delete-handle]')){
+      if (event.target.closest('[data-delete-handle]')) {
         event.preventDefault();
         currentItem.remove();
       }

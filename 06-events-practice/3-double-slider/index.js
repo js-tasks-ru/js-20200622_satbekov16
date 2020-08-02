@@ -49,8 +49,7 @@ export default class DoubleSlider {
       newLeft *= 100;
 
       let right = parseFloat(rightThumb.style.right);
-
-      if (newLeft + right > 100) {
+      if (newLeft + right >= 100) {
         newLeft = 100 - right;
       }
 
