@@ -48,9 +48,10 @@ export default class DoubleSlider {
 
       newLeft *= 100;
 
-      const rightCord = (rightThumb.getBoundingClientRect().left - sliderLeft) / width * 100;
-      if (newLeft + rightCord > 100) {
-        newLeft = rightCord - 100;
+      let right = parseFloat(rightThumb.style.right);
+
+      if (newLeft + right > 100) {
+        newLeft = 100 - right;
       }
 
       this.draggingThumb.style.left = this.subElements.progress.style.left = newLeft + '%';
@@ -66,9 +67,9 @@ export default class DoubleSlider {
 
       newRight *= 100;
 
-      const leftCord = (leftThumb.getBoundingClientRect().right - sliderLeft) / width * 100;
-      if (newRight + leftCord > 100) {
-        newRight = 100 - leftCord;
+      let left = parseFloat(leftThumb.style.left);
+      if (left + newRight > 100) {
+        newRight = 100 - left;
       }
 
       this.draggingThumb.style.right = this.subElements.progress.style.right = newRight + '%';
