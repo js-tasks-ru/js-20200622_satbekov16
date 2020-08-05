@@ -177,6 +177,7 @@ export default class SortableTable {
 
   async sortOnServer(itemId, itemOrder, start, end, item) {
     const data = await this.loadProductsData(itemId, itemOrder, start, end);
+
     this.loadRowsWithServerData(data, item);
   }
 
