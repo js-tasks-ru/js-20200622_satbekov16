@@ -184,6 +184,7 @@ export default class SortableTable {
   loadRowsWithServerData(data, item = null) {
     if(data.length) {
       const { body } = this.subElements;
+
       if(item) {
         const { id, order } = item.dataset;
         this.element.classList.remove('sortable-table_empty');
@@ -195,6 +196,7 @@ export default class SortableTable {
         this.data = data;
         body.innerHTML = this.getTableRows(data);
       }
+
     } else {
       this.element.classList.add('sortable-table_empty');
     }
