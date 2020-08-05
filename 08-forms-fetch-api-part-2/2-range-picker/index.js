@@ -5,7 +5,7 @@ export default class RangePicker {
   selectFrom = true;
 
   static formatDate(date) {
-    return date.toLocaleDateString("ru-RU");
+    return date.toLocaleString("ru", {dateStyle: 'short'});
   }
 
   onDocClick = event => {
