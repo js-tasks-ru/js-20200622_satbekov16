@@ -235,6 +235,7 @@ export default class SortableTable {
       accum[subElement.dataset.element] = subElement;
       return accum;
     }, {});
+
   }
 
   remove() {
